@@ -1,4 +1,4 @@
-var LARGEUR_CANVAS = 1500, HAUTEUR_CANVAS = 600;
+
 
 var config = {
     type: Phaser.AUTO,
@@ -22,6 +22,8 @@ var game = new Phaser.Game(config);
 var cursors, mario, terreman;
 var plateformes;
 var ennemies;
+
+let agressif, peureux, sauteur, volant, tireur;
 
 
 function preload () {
@@ -58,32 +60,31 @@ function create () {
 
 
 	// création des personnages
-	mario = this.physics.add.sprite(250, 350, 'mario');//.setScale(0.5, 1);
-	mario.scale = 0.5;
-	mario.setCollideWorldBounds(true);
-	this.physics.add.collider(plateformes, mario);
+	mario = new Joueur(	250, 350, //x, y depart
+						250, 400, //vitesse, puissance saut
+						this.physics, plateformes);
 
-	ennemies = [];
-	ennemies.push(this.physics.add.sprite(800, 80, 'agressif'));
-	ennemies.push(this.physics.add.sprite(100, 80, 'peureux')/*.setScale(4)*/);
-	ennemies.push(this.physics.add.sprite(200, 300, 'sauteur'));
-	ennemies.push(this.physics.add.sprite(800, 80, 'volant'));
-	ennemies.push(this.physics.add.sprite(800, 80, 'tireur'));
+	pagressif = new EnnemiAgressif(	700, 80,	//x, y depart
+									150, 600, 	//vitesse, rayon
+									this.physics, plateformes);
 
-	// 	activer les collisions pour les ennemies
-	ennemies.forEach((e) => {
-		//e.scale = 0.1;
-		e.setCollideWorldBounds(true);
-		this.physics.add.collider(plateformes, e);
-	});
+	ppeureux = new EnnemiPeureux(	100, 80,
+									350, 400, //vitesse, rayon
+									0, 400,	// debut/fin plateforme (null, null: pour tout le plateau)
+									this.physics, plateformes, 'peureux');
 
+	psauteur = new EnnemiSauteur(	200, 300,
+									0, 400, //vitesse, puissance saut
+									this.physics, plateformes);
 
-	/*this.anims.create({
-        key: 'left',
-        frames: this.anims.generateFrameNumbers('peureuxanimleft', { start: 0, end: 7 }),
-        frameRate: 10,
-        repeat: -1
-    });*/
+	pvolant = new EnnemiVolant(	800, 80,
+								300, 60, //vitesse, altitude
+								this.physics, plateformes);
+
+	ptireur = new EnnemiTireur(	800, 80,
+								350, 400, //vitesse, altitude
+								600, 1400,	// debut/fin plateforme (null, null: pour tout le plateau)
+								this.physics, plateformes, 'tireur');
 
 
 	// créer le lecteur des evennements du clavier
@@ -94,61 +95,12 @@ function create () {
 
 
 function update () {
+	mario.gererMouvements(cursors);
 
-	gererToucheClavier();
+	pagressif.agir(mario.corp);
+	ppeureux.agir(mario.corp);
+	psauteur.agir();
+	pvolant.agir();
+	ptireur.agir(mario.corp)
 
-    gererComportementEnnemie(ennemies[0], Comportement.AGRESSIF);
-    gererComportementEnnemie(ennemies[1], Comportement.PEUREUX, 0, 400);
-    gererComportementEnnemie(ennemies[2], Comportement.SAUTEUR);
-    gererComportementEnnemie(ennemies[3], Comportement.VOLANT);
-    gererComportementEnnemie(ennemies[4], Comportement.TIREUR, 600, 1400);
-
-}
-
-function gererToucheClavier(){
-	mario.setVelocityX(0);
-	if (cursors.left.isDown) {
-        mario.setVelocityX(-250);
-    } 
-    if (cursors.right.isDown) {
-        mario.setVelocityX(250);
-    } 
-    if (cursors.space.isDown && mario.body.touching.down) {
-    	mario.setVelocityY(-400);
-    }
-}
-
-
-
-function gererComportementEnnemie(ennemi, idc, debut_pltfm, fin_pltfm){
-	switch(idc){
-		case Comportement.AGRESSIF :
-			ennemi.body.allowGravity = true;
-			agirAgressif(ennemi);
-			break;
-
-		case Comportement.PEUREUX :
-			ennemi.body.allowGravity = true;
-			agirPeureux(ennemi, debut_pltfm, fin_pltfm);
-			break;
-
-		case Comportement.SAUTEUR :
-			ennemi.body.allowGravity = true;
-			agirSautant(ennemi);
-			break;
-
-		case Comportement.VOLANT :
-			ennemi.body.allowGravity = false;
-			agirVolant(ennemi);
-			break;
-
-		case Comportement.TIREUR :
-			ennemi.body.allowGravity = true;
-			agirTireur(ennemi, debut_pltfm, fin_pltfm); //600 1400
-			break;
-
-		default :
-			ennemi.setVelocityX(0);
-			break;
-	}
 }
